@@ -17,3 +17,5 @@ gemini-web-tool-calling.zip
 
 # macOS
 .DS_Store
+.env.*
+!.env.example
