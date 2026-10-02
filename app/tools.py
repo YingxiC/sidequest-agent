@@ -12,9 +12,10 @@ To add your pipeline, import its tools module and append it to PIPELINES.
 import json
 
 from agents.adaptation import tools as adaptation_tools
+from agents.reality import tools as reality_tools
 
-# TODO: add agents.reality.tools (match_theme) and agents.story.tools (build_sidequest).
-PIPELINES = [adaptation_tools]
+# Story still needs a pipeline-compatible tools.py from its owner.
+PIPELINES = [reality_tools, adaptation_tools]
 
 TOOLS = [decl for module in PIPELINES for decl in module.TOOLS]
 

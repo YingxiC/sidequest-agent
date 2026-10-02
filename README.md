@@ -4,7 +4,7 @@ Repository: `sidequest-agent`
 
 Day as Someone is an agentic experience that turns a user's available time, location, constraints, and chosen persona or theme into a real-world SideQuest.
 
-> Current stage: shared structure plus the completed Story / Experience slice.
+> Current stage: Reality, Story, and Adaptation feature slices are implemented; end-to-end integration remains.
 
 ## Run the Story starter
 
@@ -34,6 +34,11 @@ cp .env.example .env
 Add your Ticketmaster developer key to `.env`. The `.gitignore` excludes `.env`
 and other secret environment files, while `.env.example` remains safe to commit.
 
+The Reality pipeline supports Morningside Heights, Greenwich Village,
+Chinatown, and DUMBO. It works from the curated `data/nyc_places.json` dataset
+without credentials. Set `GOOGLE_MAPS_API_KEY` to add live Google Places Text
+Search results; failures automatically fall back to the curated dataset.
+
 ## Product Concept
 
 A user asks for a temporary way to experience their city "as someone" — a persona, archetype, fictional lens, mood, or theme.
@@ -55,7 +60,7 @@ User Request
 
 | Person | Main files | Original tool |
 |---|---|---|
-| A — Reality / Places | `agents/reality/match_theme.py`, `api/places.py`, `frontend/places.html` | `match_theme` |
+| A — Reality / Places | `agents/reality/match_theme.py`, `agents/reality/tools.py`, `integrations/places.py` | `match_theme` |
 | B — Story / Experience | `agents/story/build_sidequest.py`, `api/events.py`, `frontend/sidequest.html` | `build_sidequest` |
 | C — Adaptation / Memory | `agents/adaptation/repair_sidequest.py`, `api/weather.py`, `frontend/repair.html` | `repair_sidequest` |
 
@@ -79,7 +84,7 @@ To add a pipeline's tools, give it a `tools.py` with `TOOLS`, `TOOL_FUNCTIONS` a
 
 sidequest-agent/
 ├── agents/
-│   ├── reality/          # A's planned tool
+│   ├── reality/          # A's match_theme + tool registry
 │   ├── story/build_sidequest.py
 │   └── adaptation/       # C's planned tool
 ├── api/
@@ -143,7 +148,7 @@ Possible integrations:
 
 ### Phase 2 — Feature Pipelines
 
-- [ ] Reality / Places implementation (A)
+- [x] Reality / Places implementation (A)
 - [x] Story / Experience implementation
 - [ ] Adaptation / Memory implementation (C)
 - [x] Story / Experience unit and API tests
