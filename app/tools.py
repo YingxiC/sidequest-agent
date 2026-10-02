@@ -7,6 +7,7 @@ Each pipeline exposes a tools module with:
     clear_session(session_id)                  optional
 
 To add your pipeline, import its tools module and append it to PIPELINES.
+FEATURES then flips the matching UI section to "live" on its own.
 """
 
 import json
@@ -20,6 +21,48 @@ TOOLS = [decl for module in PIPELINES for decl in module.TOOLS]
 
 _OWNER = {name: module for module in PIPELINES for name in module.TOOL_FUNCTIONS}
 assert len(_OWNER) == sum(len(m.TOOL_FUNCTIONS) for m in PIPELINES), "duplicate tool name"
+
+# What the UI shows. A feature is live once every tool it needs is registered.
+FEATURES = [
+    {
+        "id": "plan",
+        "label": "Plan a new SideQuest",
+        "owner": "Reality + Story",
+        "tools": ["match_theme", "build_sidequest"],
+        "description": "Turn your city, free time and a persona into a themed itinerary.",
+    },
+    {
+        "id": "repair",
+        "label": "Repair on the fly",
+        "owner": "Adaptation",
+        "tools": ["repair_sidequest"],
+        "description": "Closed venue, rain, smaller budget, tired feet: swap only the affected chapters.",
+    },
+    {
+        "id": "weather",
+        "label": "Live weather",
+        "owner": "Adaptation",
+        "tools": ["get_weather"],
+        "description": "Checks Open-Meteo near your next stop before moving things indoors.",
+    },
+    {
+        "id": "memory",
+        "label": "Quest memory",
+        "owner": "Adaptation",
+        "tools": ["get_current_sidequest"],
+        "description": "Remembers your plan and every change across the conversation.",
+    },
+]
+
+
+def available_tools() -> list[str]:
+    return list(_OWNER)
+
+
+def features() -> list[dict]:
+    return [{**f, "available": all(t in _OWNER for t in f["tools"]),
+             "missing_tools": [t for t in f["tools"] if t not in _OWNER]}
+            for f in FEATURES]
 
 
 def run_tool(name: str, args: dict, session_id: str) -> str:

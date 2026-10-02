@@ -1,194 +1,645 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Gemini Web Tool Calling</title>
-        <style>
-            * {
-                box-sizing: border-box;
-                margin: 0;
-                padding: 0;
-            }
-            body {
-                font-family: system-ui, sans-serif;
-                height: 100vh;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                padding: 3rem 1rem;
-            }
-            #container {
-                width: 100%;
-                max-width: 900px;
-                display: flex;
-                flex-direction: column;
-                border: 1px solid #e0e0e0;
-            }
-            #messages {
-                overflow-y: auto;
-                padding: 2rem;
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
-                min-height: 450px;
-                max-height: 70vh;
-            }
-            .msg {
-                line-height: 1.5;
-                max-width: 80%;
-            }
-            .msg.user {
-                align-self: flex-end;
-                text-align: right;
-            }
-            .msg .role {
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #999;
-                margin-bottom: 0.25rem;
-            }
-            .msg.loading .content {
-                color: #999;
-            }
-            #input-area {
-                display: flex;
-                gap: 1rem;
-                padding: 1.5rem;
-                border-top: 1px solid #e0e0e0;
-            }
-            #user-input {
-                flex: 1;
-                padding: 0.75rem 0;
-                border: none;
-                border-bottom: 1px solid #e0e0e0;
-                font-size: 1rem;
-                outline: none;
-            }
-            #user-input:focus {
-                border-bottom-color: #000;
-            }
-            button {
-                padding: 0.75rem 1.5rem;
-                background: #000;
-                color: #fff;
-                border: none;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                cursor: pointer;
-            }
-            .tool {
-                font-family: ui-monospace, monospace;
-                font-size: 0.75rem;
-                color: #555;
-                background: #f5f5f5;
-                border-left: 3px solid #f59e0b;
-                padding: 0.5rem 0.75rem;
-                margin: 0.25rem 0 0.75rem;
-                white-space: pre-wrap;
-                word-break: break-word;
-            }
-            .tool .label {
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #b45309;
-            }
-            button:disabled {
-                opacity: 0.3;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="container">
-            <div id="messages"></div>
-            <div id="input-area">
-                <input
-                    type="text"
-                    id="user-input"
-                    placeholder="Type a message..."
-                    autocomplete="off"
-                />
-                <button id="send-btn">Send</button>
-            </div>
-        </div>
-        <script>
-            const messages = document.getElementById("messages");
-            const userInput = document.getElementById("user-input");
-            const sendBtn = document.getElementById("send-btn");
-            let sessionId = null;
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Day as Someone</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23b8512c'/%3E%3Ctext x='16' y='22' font-size='18' font-family='Georgia' text-anchor='middle' fill='white'%3ES%3C/text%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #f5efe4;
+    --panel: #fffaf2;
+    --panel-2: #f0e7d8;
+    --ink: #2b2420;
+    --ink-2: #6b5e55;
+    --ink-3: #9a8b80;
+    --line: #e2d6c4;
+    --accent: #b8512c;
+    --accent-ink: #fff;
+    --accent-soft: #f6dccd;
+    --teal: #2f6f6a;
+    --teal-soft: #d8ebe7;
+    --warn: #9a6a00;
+    --warn-soft: #f7ebc6;
+    --bad: #a23b3b;
+    --bad-soft: #f5dcdc;
+    --shadow: 0 1px 2px rgba(60, 40, 20, .06), 0 4px 16px rgba(60, 40, 20, .06);
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1916;
+      --panel: #25211d;
+      --panel-2: #2e2924;
+      --ink: #f1e8dc;
+      --ink-2: #c2b4a6;
+      --ink-3: #8c7f73;
+      --line: #3b342d;
+      --accent: #e0784f;
+      --accent-ink: #1c1916;
+      --accent-soft: #4a2c20;
+      --teal: #7cc2b9;
+      --teal-soft: #213a37;
+      --warn: #e2b850;
+      --warn-soft: #3d3220;
+      --bad: #e08484;
+      --bad-soft: #432627;
+      --shadow: none;
+    }
+  }
 
-            function addMessage(role, text, isLoading = false) {
-                const div = document.createElement("div");
-                div.className =
-                    "msg " +
-                    (role === "you" ? "user" : "assistant") +
-                    (isLoading ? " loading" : "");
-                div.innerHTML =
-                    '<div class="role">' +
-                    role +
-                    '</div><div class="content">' +
-                    text +
-                    "</div>";
-                messages.appendChild(div);
-                messages.scrollTop = messages.scrollHeight;
-                return div;
-            }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 var(--sans);
+    display: flex;
+    flex-direction: column;
+  }
+  button { font: inherit; cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
 
-            async function send() {
-                const text = userInput.value.trim();
-                if (!text) return;
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .logo {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center;
+    font: 700 18px var(--serif);
+    flex: none;
+  }
+  .brand h1 { font: 600 20px/1.1 var(--serif); letter-spacing: .01em; }
+  .brand p { color: var(--ink-2); font-size: 13px; }
+  header .spacer { flex: 1; }
+  .ghost-btn {
+    border: 1px solid var(--line); background: transparent; color: var(--ink-2);
+    padding: 7px 12px; border-radius: 8px; font-size: 13px;
+  }
+  .ghost-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-3); }
+  .ghost-btn:disabled { opacity: .45; }
 
-                userInput.value = "";
-                sendBtn.disabled = true;
-                addMessage("you", text);
-                const loading = addMessage("assistant", "Thinking...", true);
+  /* ---------- layout ---------- */
+  main {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; }
+    body { height: auto; }
+    #chat { height: 80vh; }
+    aside { border-left: none; border-top: 1px solid var(--line); }
+  }
 
-                try {
-                    const res = await fetch("/chat", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            message: text,
-                            session_id: sessionId,
-                        }),
-                    });
-                    const data = await res.json();
-                    sessionId = data.session_id;
+  /* ---------- chat ---------- */
+  #chat { display: flex; flex-direction: column; min-height: 0; }
+  #messages {
+    flex: 1; overflow-y: auto;
+    padding: 24px max(16px, 4%);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .msg { max-width: min(680px, 88%); }
+  .msg .who {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--ink-3); margin-bottom: 4px;
+  }
+  .msg .bubble {
+    padding: 10px 14px; border-radius: 14px;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .msg.user { align-self: flex-end; }
+  .msg.user .who { text-align: right; }
+  .msg.user .bubble { background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+  .msg.bot .bubble { background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; box-shadow: var(--shadow); }
+  .msg.bot.loading .bubble { color: var(--ink-3); font-style: italic; }
+  .msg.note { align-self: center; max-width: 90%; }
+  .msg.note .bubble {
+    background: transparent; color: var(--ink-2); font-size: 13px; text-align: center; padding: 2px 8px;
+  }
 
-                    // Show each tool the harness ran, above the assistant's answer
-                    for (const call of data.tool_calls || []) {
-                        const div = document.createElement("div");
-                        div.className = "tool";
-                        const label = document.createElement("span");
-                        label.className = "label";
-                        label.textContent = "tool call  ";
-                        div.appendChild(label);
-                        div.appendChild(
-                            document.createTextNode(
-                                call.name + "(" + JSON.stringify(call.args) + ")\n→ " + call.result,
-                            ),
-                        );
-                        messages.insertBefore(div, loading);
-                    }
-                    loading.querySelector(".content").textContent =
-                        data.response;
-                    loading.classList.remove("loading");
-                } catch (e) {
-                    loading.querySelector(".content").textContent =
-                        "Error: " + e.message;
-                    loading.classList.remove("loading");
-                }
-                sendBtn.disabled = false;
-                userInput.focus();
-            }
+  .welcome {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px 22px; box-shadow: var(--shadow); max-width: 680px;
+  }
+  .welcome h2 { font: 600 22px/1.25 var(--serif); margin-bottom: 6px; }
+  .welcome > p { color: var(--ink-2); margin-bottom: 14px; }
+  .steps { display: grid; gap: 10px; counter-reset: step; }
+  .steps li {
+    list-style: none; display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start;
+  }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: grid; place-items: center; font-weight: 700; font-size: 13px;
+  }
+  .steps b { font-weight: 600; }
+  .steps span { color: var(--ink-2); font-size: 14px; }
 
-            sendBtn.addEventListener("click", send);
-            userInput.addEventListener("keydown", function (e) {
-                if (e.key === "Enter") send();
-            });
-            userInput.focus();
-        </script>
-    </body>
+  /* tool calls */
+  .tool {
+    max-width: min(680px, 88%);
+    border: 1px solid var(--line); border-left: 3px solid var(--teal);
+    background: var(--panel-2); border-radius: 8px;
+    font-size: 13px;
+  }
+  .tool.failed { border-left-color: var(--bad); }
+  .tool summary {
+    cursor: pointer; padding: 7px 12px; list-style: none;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .tool summary::-webkit-details-marker { display: none; }
+  .tool summary::before { content: "▸"; color: var(--ink-3); transition: transform .15s; }
+  .tool[open] summary::before { transform: rotate(90deg); }
+  .tool .tname { font-family: var(--mono); font-weight: 600; color: var(--teal); }
+  .tool.failed .tname { color: var(--bad); }
+  .tool .tlabel { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+  .tool .tsum { color: var(--ink-2); }
+  .tool pre {
+    margin: 0 12px 10px; padding: 8px 10px; border-radius: 6px;
+    background: var(--panel); border: 1px solid var(--line);
+    font: 12px/1.45 var(--mono); white-space: pre-wrap; word-break: break-word;
+    max-height: 320px; overflow: auto;
+  }
+  .tool .ptitle { margin: 4px 12px 4px; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+
+  /* composer */
+  #composer { border-top: 1px solid var(--line); background: var(--panel); padding: 12px max(16px, 4%) 16px; }
+  #chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    padding: 5px 11px; border-radius: 999px; font-size: 13px;
+  }
+  .chip:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .chip:disabled { opacity: .45; }
+  .chip .soon { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; margin-left: 6px; color: var(--warn); }
+  .input-row { display: flex; gap: 10px; }
+  #user-input {
+    flex: 1; min-width: 0;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    border-radius: 10px; padding: 11px 14px; font: inherit; outline: none;
+  }
+  #user-input:focus { border-color: var(--accent); }
+  .primary {
+    border: none; background: var(--accent); color: var(--accent-ink);
+    padding: 0 18px; border-radius: 10px; font-weight: 600;
+  }
+  .primary:disabled { opacity: .45; }
+
+  /* ---------- side panel ---------- */
+  aside {
+    border-left: 1px solid var(--line);
+    overflow-y: auto; min-height: 0;
+    padding: 18px; display: flex; flex-direction: column; gap: 16px;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px; box-shadow: var(--shadow);
+  }
+  .card h3 {
+    font: 600 16px var(--serif); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .badge {
+    font: 600 10px var(--sans); text-transform: uppercase; letter-spacing: .06em;
+    padding: 3px 7px; border-radius: 999px; white-space: nowrap;
+  }
+  .badge.live { background: var(--teal-soft); color: var(--teal); }
+  .badge.soon { background: var(--warn-soft); color: var(--warn); }
+  .badge.updated { background: var(--accent-soft); color: var(--accent); }
+  .badge.done { background: var(--panel-2); color: var(--ink-3); }
+
+  /* plan form (disabled until planning tools exist) */
+  .plan { position: relative; }
+  .plan form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .plan label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+  .plan label.wide { grid-column: 1 / -1; }
+  .plan input {
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 14px;
+  }
+  .plan button { grid-column: 1 / -1; padding: 9px; }
+  .plan.locked form { opacity: .45; pointer-events: none; user-select: none; }
+  .plan .lock-note {
+    display: none; margin-top: 10px; font-size: 13px; color: var(--ink-2);
+    background: var(--warn-soft); border-radius: 8px; padding: 8px 10px;
+  }
+  .plan.locked .lock-note { display: block; }
+
+  /* quest */
+  .empty { color: var(--ink-2); font-size: 14px; }
+  .empty p { margin-bottom: 12px; }
+  .demo-btn { width: 100%; padding: 10px; }
+  .q-title { font: 600 18px/1.3 var(--serif); }
+  .q-sub { color: var(--ink-2); font-size: 13px; margin: 2px 0 12px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .stat { background: var(--panel-2); border-radius: 10px; padding: 8px 10px; }
+  .stat .k { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
+  .stat .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat .v.over { color: var(--bad); }
+
+  .stops { list-style: none; position: relative; }
+  .stop { position: relative; padding: 0 0 14px 26px; }
+  .stop::before {
+    content: ""; position: absolute; left: 7px; top: 18px; bottom: -2px;
+    width: 2px; background: var(--line);
+  }
+  .stop:last-child::before { display: none; }
+  .stop .dot {
+    position: absolute; left: 0; top: 4px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--panel); border: 2px solid var(--accent);
+  }
+  .stop.changed .dot { background: var(--accent); }
+  .stop.completed .dot { border-color: var(--ink-3); background: var(--ink-3); }
+  .stop .walk { font-size: 12px; color: var(--ink-3); margin-bottom: 2px; }
+  .stop .chapter { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: .02em; }
+  .stop .place { font-weight: 600; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .stop .meta { font-size: 12px; color: var(--ink-2); }
+  .stop .why { font-size: 12px; color: var(--accent); margin-top: 2px; }
+  .stop .story { font-size: 13px; color: var(--ink-2); font-style: italic; margin-top: 3px; }
+  .dropped {
+    margin-top: 4px; font-size: 13px; color: var(--ink-2);
+    background: var(--bad-soft); border-radius: 8px; padding: 8px 10px;
+  }
+  .dropped b { color: var(--bad); }
+  .q-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .q-actions button { flex: 1; }
+
+  /* features */
+  .features { list-style: none; display: grid; gap: 10px; }
+  .features li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+  .features .fname { font-weight: 600; font-size: 14px; }
+  .features .fdesc { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); }
+  .features .ftools { grid-column: 1 / -1; font: 11px var(--mono); color: var(--ink-3); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">S</div>
+    <div>
+      <h1>Day as Someone</h1>
+      <p>Live a few hours in your city as someone else, and keep the story going when plans change.</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <button class="ghost-btn" id="new-session" title="Forget this conversation and SideQuest">New session</button>
+</header>
+
+<main>
+  <section id="chat">
+    <div id="messages">
+      <div class="welcome">
+        <h2>Your city, as someone else.</h2>
+        <p>A SideQuest is a short real-world itinerary told as chapters, lived as a persona:
+          a 1950s novelist, a 90s indie filmmaker. This agent keeps it alive while you're out.</p>
+        <ol class="steps">
+          <li><div><b>Get a SideQuest.</b> <span id="step1-text">Load the demo on the right
+            (a struggling novelist in Greenwich Village).</span></div></li>
+          <li><div><b>Tell it what changed.</b> <span>"The gallery is closed and it's raining",
+            "my budget is now $10", "I don't want to walk that far".</span></div></li>
+          <li><div><b>Only the affected chapters change.</b> <span>Same persona, same story.
+            Every tool call is shown in the chat, and the plan on the right updates.</span></div></li>
+        </ol>
+      </div>
+    </div>
+
+    <div id="composer">
+      <div id="chips"></div>
+      <div class="input-row">
+        <input id="user-input" type="text" autocomplete="off" placeholder="Ask about the weather, or load the demo SideQuest →" />
+        <button class="primary" id="send-btn">Send</button>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card plan locked" id="plan-card">
+      <h3>Plan a new SideQuest <span class="badge soon" id="plan-badge">Coming soon</span></h3>
+      <form id="plan-form">
+        <label class="wide">Persona or theme
+          <input name="persona" placeholder="a 90s indie filmmaker" required /></label>
+        <label>City <input name="city" placeholder="New York" required /></label>
+        <label>Hours free <input name="hours" type="number" min="1" max="12" value="3" required /></label>
+        <label class="wide">Budget ($) <input name="budget" type="number" min="0" value="40" /></label>
+        <button class="primary" type="submit">Plan my SideQuest</button>
+      </form>
+      <div class="lock-note" id="plan-note">Planning needs the Reality and Story tools, which aren't built yet.
+        Load the demo SideQuest below to try repairs in the meantime.</div>
+    </div>
+
+    <div class="card" id="quest-card">
+      <h3>Your SideQuest</h3>
+      <div id="quest-body"></div>
+    </div>
+
+    <div class="card">
+      <h3>What this agent can do</h3>
+      <ul class="features" id="features"></ul>
+    </div>
+  </aside>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const messagesEl = $("messages");
+  const input = $("user-input");
+  const sendBtn = $("send-btn");
+
+  const newId = () => (crypto.randomUUID ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+  let sessionId = newId();
+  let featureMap = {};
+  let quest = null;            // latest get_current_sidequest payload
+  let busy = false;
+  const seenStops = {};        // step_id -> {chapter, place}, to name dropped stops
+
+  const CHIPS = [
+    { text: "The gallery is closed and it's raining. Keep the novelist theme.", needs: ["repair"], quest: true },
+    { text: "I don't want to walk that far.", needs: ["repair"], quest: true },
+    { text: "My budget is now $10.", needs: ["repair"], quest: true },
+    { text: "Will it rain near my next stop?", needs: ["weather"], quest: true },
+    { text: "Is it nice enough for a walk in New York right now?", needs: ["weather"] },
+    { text: "What's my plan right now?", needs: ["memory"], quest: true },
+    { text: "Give me 3 hours in NYC as a 90s indie filmmaker.", needs: ["plan"] },
+  ];
+
+  // ---------- helpers ----------
+  function el(tag, attrs = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === "class") node.className = v;
+      else if (k === "text") node.textContent = v;
+      else if (v !== undefined && v !== null && v !== false) node.setAttribute(k, v);
+    }
+    for (const c of children) if (c !== null && c !== undefined && c !== false) node.append(c);
+    return node;
+  }
+  const money = (n) => (n === null || n === undefined) ? "—" : "$" + Number(n).toFixed(Number(n) % 1 ? 2 : 0);
+  const scroll = () => { messagesEl.scrollTop = messagesEl.scrollHeight; };
+
+  function addMessage(kind, text) {
+    const who = { user: "You", bot: "Agent", note: "" }[kind] ?? "";
+    const node = el("div", { class: "msg " + kind },
+      who ? el("div", { class: "who", text: who }) : null,
+      el("div", { class: "bubble", text }));
+    messagesEl.append(node);
+    scroll();
+    return node;
+  }
+
+  function parseResult(result) {
+    if (typeof result !== "string") return result;
+    try { return JSON.parse(result); } catch { return result; }
+  }
+
+  function toolSummary(name, result) {
+    if (!result || typeof result !== "object") return "";
+    if (result.ok === false) return result.error || "failed";
+    if (name === "repair_sidequest") {
+      const n = (result.actions || []).length;
+      return n ? `${n} change${n > 1 ? "s" : ""}` : "no change needed";
+    }
+    if (name === "get_weather") {
+      const t = result.temperature_c != null ? `, ${Math.round(result.temperature_c)}°C` : "";
+      return `${result.condition}${t} at ${result.location?.label ?? "?"}`;
+    }
+    if (name === "get_current_sidequest") return `v${result.sidequest?.version}, ${result.sidequest?.stops?.length} stops`;
+    return "ok";
+  }
+
+  function addToolCall(call, before) {
+    const result = parseResult(call.result);
+    const failed = result && typeof result === "object" && result.ok === false;
+    const node = el("details", { class: "tool" + (failed ? " failed" : "") },
+      el("summary", {},
+        el("span", { class: "tlabel", text: "tool call" }),
+        el("span", { class: "tname", text: call.name }),
+        el("span", { class: "tsum", text: "· " + toolSummary(call.name, result) })),
+      el("div", { class: "ptitle", text: "args" }),
+      el("pre", { text: JSON.stringify(call.args, null, 2) }),
+      el("div", { class: "ptitle", text: "result" }),
+      el("pre", { text: typeof result === "string" ? result : JSON.stringify(result, null, 2) }));
+    messagesEl.insertBefore(node, before);
+  }
+
+  // ---------- capabilities ----------
+  async function loadStatus() {
+    let data;
+    try {
+      data = await (await fetch("/api/status")).json();
+    } catch (e) {
+      addMessage("note", "Couldn't reach the server: " + e.message);
+      return;
+    }
+    featureMap = Object.fromEntries(data.features.map(f => [f.id, f]));
+
+    const list = $("features");
+    list.replaceChildren(...data.features.map(f => el("li", {},
+      el("span", { class: "fname", text: f.label }),
+      el("span", { class: "badge " + (f.available ? "live" : "soon"), text: f.available ? "Live" : "Coming soon" }),
+      el("span", { class: "fdesc", text: f.description }),
+      el("span", { class: "ftools", text: f.tools.join(", ") + (f.available ? "" : "  (" + f.owner + ", not built yet)") }))));
+
+    const plan = featureMap.plan;
+    const planCard = $("plan-card");
+    if (plan?.available) {
+      planCard.classList.remove("locked");
+      $("plan-badge").className = "badge live";
+      $("plan-badge").textContent = "Live";
+      $("step1-text").textContent = "Fill in the planner on the right, or load the demo.";
+    } else if (plan) {
+      $("plan-note").textContent = `Planning needs ${plan.missing_tools.join(" and ")} (${plan.owner}), ` +
+        "which aren't built yet. Load the demo SideQuest below to try repairs in the meantime.";
+    }
+    renderChips();
+  }
+
+  const has = (id) => !!featureMap[id]?.available;
+
+  function renderChips() {
+    $("chips").replaceChildren(...CHIPS.map(c => {
+      const missing = c.needs.filter(n => !has(n));
+      const needQuest = c.quest && !quest;
+      const disabled = busy || missing.length > 0 || needQuest;
+      const title = missing.length ? "Coming soon: needs " + missing.map(m => featureMap[m]?.label ?? m).join(", ")
+        : needQuest ? "Load or plan a SideQuest first" : "Send this message";
+      const btn = el("button", { class: "chip", title, disabled }, c.text);
+      if (missing.length) btn.append(el("span", { class: "soon", text: "soon" }));
+      btn.addEventListener("click", () => send(c.text));
+      return btn;
+    }));
+    input.placeholder = quest
+      ? "Tell me what changed: closed venue, rain, budget, walking, time…"
+      : "Ask about the weather, or load the demo SideQuest →";
+  }
+
+  // ---------- SideQuest panel ----------
+  async function refreshQuest() {
+    try {
+      const data = await (await fetch("/api/sidequest?session_id=" + encodeURIComponent(sessionId))).json();
+      quest = data.ok ? data : null;
+    } catch { /* keep last known state */ }
+    renderQuest();
+    renderChips();
+  }
+
+  function renderQuest() {
+    const body = $("quest-body");
+    if (!quest) {
+      const btn = el("button", { class: "primary demo-btn", text: "Load demo: a 1950s novelist in Greenwich Village" });
+      btn.addEventListener("click", loadDemo);
+      body.replaceChildren(el("div", { class: "empty" },
+        el("p", { text: has("plan")
+          ? "No SideQuest yet. Plan one above, or try the demo."
+          : "No SideQuest yet. Planning is coming soon; load the demo to see repairs in action." }),
+        btn));
+      return;
+    }
+
+    const q = quest.sidequest;
+    q.stops.forEach(s => { seenStops[s.step_id] = { chapter: s.chapter, place: s.place }; });
+    const latest = (quest.recent_changes || []).filter(c => c.version === q.version && q.version > 1);
+    const changedWhy = Object.fromEntries(latest.filter(c => c.action === "replaced").map(c => [c.step_id, c.reason]));
+    const dropped = latest.filter(c => c.action === "dropped");
+
+    const over = q.budget != null && q.total_cost > q.budget;
+    const stats = el("div", { class: "stats" },
+      el("div", { class: "stat" }, el("div", { class: "k", text: "Spend" }),
+        el("div", { class: "v" + (over ? " over" : ""), text: `${money(q.total_cost)} / ${money(q.budget)}` })),
+      el("div", { class: "stat" }, el("div", { class: "k", text: "Time" }),
+        el("div", { class: "v", text: `${Math.floor(q.total_time_min / 60)}h ${q.total_time_min % 60}m` })),
+      el("div", { class: "stat" }, el("div", { class: "k", text: "Version" }),
+        el("div", { class: "v", text: "v" + q.version })));
+
+    const stops = el("ol", { class: "stops" }, ...q.stops.map((s, i) => {
+      const changed = s.step_id in changedWhy;
+      return el("li", { class: "stop" + (changed ? " changed" : "") + (s.completed ? " completed" : "") },
+        el("span", { class: "dot" }),
+        i > 0 ? el("div", { class: "walk", text: `↓ ${s.walk_min_from_prev} min walk` }) : null,
+        el("div", { class: "chapter", text: s.chapter || s.step_id }),
+        el("div", { class: "place" }, s.place,
+          changed ? el("span", { class: "badge updated", text: "Updated" }) : null,
+          s.completed ? el("span", { class: "badge done", text: "Done" }) : null),
+        el("div", { class: "meta", text: [
+          s.indoor ? "Indoors" : "Outdoors", `${s.duration_min} min`,
+          s.est_cost ? money(s.est_cost) : "Free", s.optional ? "Optional" : null,
+        ].filter(Boolean).join(" · ") }),
+        changed ? el("div", { class: "why", text: "Why: " + changedWhy[s.step_id] }) : null,
+        s.narrative ? el("div", { class: "story", text: s.narrative }) : null);
+    }));
+
+    const droppedBox = dropped.length ? el("div", { class: "dropped" },
+      el("b", { text: "Dropped in v" + q.version + ": " }),
+      dropped.map(d => `${seenStops[d.step_id]?.chapter || d.step_id} (${seenStops[d.step_id]?.place || d.old_place_id}): ${d.reason}`).join("; ")) : null;
+
+    const undoBtn = el("button", { class: "ghost-btn", text: "↶ Undo last change",
+      disabled: !quest.earlier_versions || busy,
+      title: quest.earlier_versions ? "Go back to the previous version" : "Nothing to undo yet" });
+    undoBtn.addEventListener("click", undo);
+
+    body.replaceChildren(...[
+      el("div", { class: "q-title", text: q.persona ? `A day as a ${q.persona}` : q.theme }),
+      el("div", { class: "q-sub", text: `Theme: ${q.theme}` + (q.max_walk_min ? ` · max ${q.max_walk_min} min walks` : "") }),
+      stats, stops, droppedBox,
+      el("div", { class: "q-actions" }, undoBtn)].filter(Boolean));
+  }
+
+  async function loadDemo() {
+    const data = await postJSON("/api/demo", { session_id: sessionId });
+    if (!data.ok) return addMessage("note", data.error || "Couldn't load the demo.");
+    addMessage("note", `Loaded "${data.title}" in ${data.city}. Now tell me what changed, or use a suggestion below.`);
+    await refreshQuest();
+    input.focus();
+  }
+
+  async function undo() {
+    const data = await postJSON("/api/undo", { session_id: sessionId });
+    addMessage("note", data.ok ? `Undid the last change. Back to v${data.sidequest.version}.` : data.error);
+    await refreshQuest();
+  }
+
+  async function postJSON(url, body) {
+    try {
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      return await res.json();
+    } catch (e) {
+      return { ok: false, error: "Network error: " + e.message };
+    }
+  }
+
+  // ---------- chat ----------
+  function setBusy(b) {
+    busy = b;
+    sendBtn.disabled = b;
+    input.disabled = b;
+    renderChips();
+    if (quest) renderQuest();
+  }
+
+  async function send(text) {
+    text = (text ?? input.value).trim();
+    if (!text || busy) return;
+    input.value = "";
+    addMessage("user", text);
+    const loading = addMessage("bot", "Thinking…");
+    loading.classList.add("loading");
+    setBusy(true);
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, session_id: sessionId }),
+      });
+      const data = await res.json();
+      sessionId = data.session_id;
+      for (const call of data.tool_calls || []) addToolCall(call, loading);
+      loading.querySelector(".bubble").textContent = data.response || "(no reply)";
+    } catch (e) {
+      loading.querySelector(".bubble").textContent = "Error: " + e.message;
+    }
+    loading.classList.remove("loading");
+    setBusy(false);
+    scroll();
+    await refreshQuest();
+    input.focus();
+  }
+
+  $("plan-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!has("plan")) return;
+    const f = new FormData(e.target);
+    const budget = f.get("budget") ? ` My budget is $${f.get("budget")}.` : "";
+    send(`I have ${f.get("hours")} hours in ${f.get("city")}. Give me a day as ${f.get("persona")}.${budget}`);
+  });
+
+  $("new-session").addEventListener("click", async () => {
+    await fetch("/clear?session_id=" + encodeURIComponent(sessionId), { method: "POST" }).catch(() => {});
+    sessionId = newId();
+    quest = null;
+    messagesEl.querySelectorAll(".msg, .tool").forEach(n => n.remove());
+    renderQuest();
+    renderChips();
+    addMessage("note", "Started a new session.");
+  });
+
+  sendBtn.addEventListener("click", () => send());
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+
+  loadStatus().then(refreshQuest);
+  input.focus();
+</script>
+</body>
 </html>

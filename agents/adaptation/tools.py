@@ -80,6 +80,17 @@ def clear_session(session_id: str) -> None:
     _store.delete(session_id)
 
 
+def undo_last_repair(session_id: str) -> dict[str, Any]:
+    """Go back to the previous version of the SideQuest (the UI's undo button)."""
+    state = _store.get(session_id)
+    if state is None:
+        return _error(*_NO_QUEST)
+    if not state.revert():
+        return _error("There is no earlier version to go back to.", "Nothing to undo.")
+    _store.save(state)
+    return get_current_sidequest(session_id)
+
+
 # --- helpers ----------------------------------------------------------------
 
 

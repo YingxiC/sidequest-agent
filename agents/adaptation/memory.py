@@ -64,6 +64,9 @@ class SessionState:
         if not self.history:
             return False
         self.quest = self.history.pop()
+        # Forget actions of the undone version, so a later repair that reuses
+        # its version number doesn't inherit them.
+        self.repair_log = [e for e in self.repair_log if e.get("version", 0) <= self.quest.version]
         return True
 
     def mark_completed(self, step_id: str) -> None:

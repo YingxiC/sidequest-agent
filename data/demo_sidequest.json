@@ -1,0 +1,218 @@
+{
+  "title": "A day as a struggling 1950s novelist",
+  "city": "New York (Greenwich Village)",
+  "quest": {
+    "quest_id": "demo-novelist",
+    "theme": "novelist",
+    "steps": [
+      {
+        "step_id": "s1",
+        "place": {
+          "place_id": "p_cafe",
+          "name": "Caffe Reggio",
+          "tags": [
+            "cafe",
+            "writing",
+            "literary"
+          ],
+          "indoor": true,
+          "lat": 40.7302,
+          "lng": -73.9999,
+          "rating": 4.5,
+          "open_now": true,
+          "est_cost": 8
+        },
+        "duration_min": 45,
+        "narrative": "Open your notebook at Caffe Reggio.",
+        "micro_tasks": [
+          "Write the first line of your novel at Caffe Reggio"
+        ],
+        "theme_tags": [
+          "writing",
+          "cafe"
+        ],
+        "priority": 3,
+        "optional": false,
+        "travel_min_from_prev": 0,
+        "chapter": "Chapter 1: The Blank Page"
+      },
+      {
+        "step_id": "s2",
+        "place": {
+          "place_id": "p_gallery",
+          "name": "Salmagundi Gallery",
+          "tags": [
+            "gallery",
+            "art",
+            "literary"
+          ],
+          "indoor": true,
+          "lat": 40.7335,
+          "lng": -73.9945,
+          "rating": 4.5,
+          "open_now": true,
+          "est_cost": 0
+        },
+        "duration_min": 40,
+        "narrative": "Find your antagonist's face at Salmagundi Gallery.",
+        "micro_tasks": [
+          "Pick a painting at Salmagundi Gallery and name the character"
+        ],
+        "theme_tags": [
+          "art",
+          "gallery",
+          "literary"
+        ],
+        "priority": 2,
+        "optional": false,
+        "travel_min_from_prev": 9,
+        "chapter": "Chapter 2: The Muse"
+      },
+      {
+        "step_id": "s3",
+        "place": {
+          "place_id": "p_park",
+          "name": "Washington Square Park",
+          "tags": [
+            "park",
+            "people-watching",
+            "inspiration"
+          ],
+          "indoor": false,
+          "lat": 40.7308,
+          "lng": -73.9973,
+          "rating": 4.5,
+          "open_now": true,
+          "est_cost": 0.0
+        },
+        "duration_min": 30,
+        "narrative": "Eavesdrop for dialogue in Washington Square Park.",
+        "micro_tasks": [
+          "Write down three overheard lines"
+        ],
+        "theme_tags": [
+          "people-watching",
+          "inspiration"
+        ],
+        "priority": 1,
+        "optional": true,
+        "travel_min_from_prev": 6,
+        "chapter": "Chapter 3: Overheard"
+      },
+      {
+        "step_id": "s4",
+        "place": {
+          "place_id": "p_bar",
+          "name": "White Horse Tavern",
+          "tags": [
+            "bar",
+            "literary",
+            "history"
+          ],
+          "indoor": true,
+          "lat": 40.7359,
+          "lng": -74.006,
+          "rating": 4.5,
+          "open_now": true,
+          "est_cost": 15
+        },
+        "duration_min": 60,
+        "narrative": "End where Dylan Thomas drank: White Horse Tavern.",
+        "micro_tasks": [
+          "Toast your unfinished manuscript"
+        ],
+        "theme_tags": [
+          "literary",
+          "bar"
+        ],
+        "priority": 3,
+        "optional": false,
+        "travel_min_from_prev": 14,
+        "chapter": "Chapter 4: The Last Round"
+      }
+    ],
+    "total_time_min": 204,
+    "persona": "struggling 1950s novelist",
+    "budget": 40,
+    "max_walk_min": null,
+    "version": 1
+  },
+  "candidates": [
+    {
+      "place_id": "c_bookstore",
+      "name": "Three Lives & Company",
+      "tags": [
+        "bookstore",
+        "literary",
+        "inspiration",
+        "art"
+      ],
+      "indoor": true,
+      "lat": 40.7339,
+      "lng": -74.0021,
+      "rating": 4.8,
+      "open_now": true,
+      "est_cost": 0
+    },
+    {
+      "place_id": "c_library",
+      "name": "Jefferson Market Library",
+      "tags": [
+        "library",
+        "people-watching",
+        "history",
+        "inspiration"
+      ],
+      "indoor": true,
+      "lat": 40.7344,
+      "lng": -73.9989,
+      "rating": 4.7,
+      "open_now": true,
+      "est_cost": 0
+    },
+    {
+      "place_id": "c_museum",
+      "name": "Far Uptown Art Museum",
+      "tags": [
+        "art",
+        "gallery",
+        "museum"
+      ],
+      "indoor": true,
+      "lat": 40.7794,
+      "lng": -73.9632,
+      "rating": 4.9,
+      "open_now": true,
+      "est_cost": 25
+    },
+    {
+      "place_id": "c_garden",
+      "name": "Liz Christy Garden",
+      "tags": [
+        "garden",
+        "inspiration",
+        "people-watching"
+      ],
+      "indoor": false,
+      "lat": 40.724,
+      "lng": -73.992,
+      "rating": 4.6,
+      "open_now": true,
+      "est_cost": 0.0
+    },
+    {
+      "place_id": "c_offtheme",
+      "name": "Sports Bar Arena",
+      "tags": [
+        "sports",
+        "bar"
+      ],
+      "indoor": true,
+      "lat": 40.731,
+      "lng": -73.999,
+      "rating": 4.0,
+      "open_now": true,
+      "est_cost": 20
+    }
+  ]
+}
