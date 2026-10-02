@@ -21,6 +21,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.tools import TOOLS, clear_session, run_tool
+from api.events import router as events_router
 
 # --- Config ---
 
@@ -95,6 +96,7 @@ sessions: dict[str, list] = {}
 # --- FastAPI App ---
 
 app = FastAPI()
+app.include_router(events_router)
 
 
 class ChatRequest(BaseModel):
