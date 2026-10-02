@@ -48,13 +48,15 @@ def test_index_and_status(client):
     assert "Day as Someone" in client.get("/").text
     feats = {f["id"]: f for f in client.get("/api/status").json()["features"]}
     assert feats["repair"]["available"] and feats["weather"]["available"]
+    assert feats["places"]["available"]  # Reality's match_theme is registered
     assert not feats["plan"]["available"]
-    assert feats["plan"]["missing_tools"] == ["match_theme", "build_sidequest"]
+    assert feats["plan"]["missing_tools"] == ["build_sidequest"]
 
 
 def test_system_prompt_mentions_missing_features():
     prompt = main.build_system_prompt()
-    assert "Not available yet" in prompt and "Plan a new SideQuest" in prompt
+    assert "Not available yet" in prompt and "Build the full SideQuest" in prompt
+    assert "match_theme" in prompt
 
 
 def test_demo_then_repair_through_chat(client, monkeypatch):

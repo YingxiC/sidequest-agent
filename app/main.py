@@ -27,6 +27,7 @@ from pydantic import BaseModel
 
 from agents.adaptation import tools as adaptation_tools
 from agents.adaptation.schemas import place_from_dict, sidequest_from_dict
+from api.events import router as events_router
 from app.tools import TOOLS, clear_session, features, run_tool
 
 # --- Config ---
@@ -41,6 +42,18 @@ def build_system_prompt() -> str:
         "You are Day as Someone, an agent that turns the user's free time in a city into a "
         "SideQuest: a short, themed real-world itinerary told as chapters, experienced 'as "
         "someone' (a persona like a 1950s novelist or a 90s indie filmmaker).\n"
+        "For a brand-new SideQuest, first call match_theme to find a diverse, explainable "
+        "shortlist of real places in one supported NYC neighborhood. If the user has not "
+        "chosen a neighborhood, ask them to choose Morningside Heights, Greenwich Village, "
+        "Chinatown, or DUMBO. Do not invent places. Twenty ready-made personas are available: "
+        "struggling novelist, urban detective, indie filmmaker, architecture apprentice, "
+        "city naturalist, independent magazine editor, jazz age drifter, street photographer, "
+        "hidden history archivist, thrift fashion scout, neighborhood food chronicler, "
+        "waterfront poet, campus intellectual, avant garde theater actor, urban sketch artist, "
+        "community radio producer, romantic city wanderer, industrial design student, museum "
+        "time traveler, and midnight mystery writer. For any other persona, infer 3-6 "
+        "desired_tags, optional avoid_tags, and a short story_tone from the match_theme schema; "
+        "never invent tags outside its enum.\n"
         "Once a SideQuest exists, keep it alive across the conversation:\n"
         "- When something changes (a venue is closed, an event is cancelled, it rains, the "
         "budget or time changes, the user doesn't want to walk that far, or wants to skip a "
@@ -142,6 +155,7 @@ def get_or_create_session(session_id: str | None) -> str:
 # --- FastAPI App ---
 
 app = FastAPI(title="Day as Someone")
+app.include_router(events_router)
 
 
 class ChatRequest(BaseModel):

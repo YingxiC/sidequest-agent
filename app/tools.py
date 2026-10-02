@@ -13,9 +13,10 @@ FEATURES then flips the matching UI section to "live" on its own.
 import json
 
 from agents.adaptation import tools as adaptation_tools
+from agents.reality import tools as reality_tools
 
-# TODO: add agents.reality.tools (match_theme) and agents.story.tools (build_sidequest).
-PIPELINES = [adaptation_tools]
+# Story still needs a pipeline-compatible tools.py from its owner.
+PIPELINES = [reality_tools, adaptation_tools]
 
 TOOLS = [decl for module in PIPELINES for decl in module.TOOLS]
 
@@ -25,11 +26,18 @@ assert len(_OWNER) == sum(len(m.TOOL_FUNCTIONS) for m in PIPELINES), "duplicate 
 # What the UI shows. A feature is live once every tool it needs is registered.
 FEATURES = [
     {
+        "id": "places",
+        "label": "Find places for a persona",
+        "owner": "Reality",
+        "tools": ["match_theme"],
+        "description": "Ranks real places in a NYC neighborhood that fit the persona you want to live.",
+    },
+    {
         "id": "plan",
-        "label": "Plan a new SideQuest",
-        "owner": "Reality + Story",
-        "tools": ["match_theme", "build_sidequest"],
-        "description": "Turn your city, free time and a persona into a themed itinerary.",
+        "label": "Build the full SideQuest",
+        "owner": "Story",
+        "tools": ["build_sidequest"],
+        "description": "Turns those places into a chaptered itinerary with narrative and micro-tasks.",
     },
     {
         "id": "repair",

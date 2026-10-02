@@ -4,8 +4,51 @@ Repository: `sidequest-agent`
 
 Day as Someone is an agentic experience that turns a user's available time, location, constraints, and chosen persona or theme into a real-world SideQuest.
 
-> Current stage: project architecture and repository skeleton.
-> Original tool implementations are intentionally deferred.
+> Current stage: Reality, Story, and Adaptation feature slices are implemented; end-to-end integration remains.
+
+## Run the Story starter
+
+The Story / Experience pipeline is available at `/api/events` with a browser
+frontend at `/`. It accepts a request, theme, available minutes, and optional
+viable places, then returns a validated, ordered SideQuest with chapters,
+narrative prompts, micro-tasks, time allocation, and budget estimates. It uses
+the Gemini tool-calling loop when configured and falls back to a deterministic
+local builder when the model is unavailable. Ticketmaster event enrichment is
+optional and only runs when `TICKETMASTER_API_KEY` is configured.
+
+```bash
+python -m pip install -e .
+SIDEQUEST_USE_MODEL=0 python app.py
+```
+
+Open `http://127.0.0.1:8000`. To enable Gemini, authenticate with Application
+Default Credentials and omit `SIDEQUEST_USE_MODEL=0`. To enable optional live
+events, set `TICKETMASTER_API_KEY` and check the events option in the UI.
+
+For local Ticketmaster configuration:
+
+```bash
+cp .env.example .env
+```
+
+Add your Ticketmaster developer key to `.env`. The `.gitignore` excludes `.env`
+and other secret environment files, while `.env.example` remains safe to commit.
+
+The Reality pipeline supports Morningside Heights, Greenwich Village,
+Chinatown, and DUMBO. It works from the curated `data/nyc_places.json` dataset
+without credentials. Set `GOOGLE_MAPS_API_KEY` to add live Google Places Text
+Search results; failures automatically fall back to the curated dataset.
+
+Reality includes twenty curated personas: struggling novelist, urban detective,
+indie filmmaker, architecture apprentice, city naturalist, and independent
+magazine editor, plus jazz age drifter, street photographer, hidden history
+archivist, thrift fashion scout, neighborhood food chronicler, and waterfront
+poet, campus intellectual, avant garde theater actor, urban sketch artist,
+community radio producer, romantic city wanderer, industrial design student,
+museum time traveler, and midnight mystery writer. Other personas are also accepted: the model translates them
+into a controlled place-tag vocabulary, and `match_theme` performs the final
+deterministic, explainable scoring. Unknown tags are ignored rather than being
+used to invent unsupported place attributes.
 
 ## Product Concept
 
@@ -24,15 +67,15 @@ User Request
 → Present itinerary + narrative + micro-tasks
 → Adapt when conditions change
 
-## Core Feature Ownership
+## Three-Person Ownership
 
-| Area | Responsibility | Planned Original Tool |
+| Person | Main files | Original tool |
 |---|---|---|
-| Reality / Places | Place discovery, filtering, theme-to-place matching, feasibility | `match_theme` |
-| Story / Experience | SideQuest structure, narrative, ordering, micro-tasks | `build_sidequest` |
-| Adaptation / Memory | Session state, constraint changes, rerouting and repair | `repair_sidequest` |
+| A — Reality / Places | `agents/reality/match_theme.py`, `agents/reality/tools.py`, `integrations/places.py` | `match_theme` |
+| B — Story / Experience | `agents/story/build_sidequest.py`, `api/events.py`, `frontend/sidequest.html` | `build_sidequest` |
+| C — Adaptation / Memory | `agents/adaptation/repair_sidequest.py`, `api/weather.py`, `frontend/repair.html` | `repair_sidequest` |
 
-The tool names above are placeholders only. Their implementations will be added later.
+Each person owns one original tool, its API boundary, and a small frontend surface.
 
 ## Running Locally
 
@@ -51,21 +94,25 @@ To add a pipeline's tools, give it a `tools.py` with `TOOLS`, `TOOL_FUNCTIONS` a
 ## Repository Structure
 
 sidequest-agent/
-├── README.md
-├── app/
 ├── agents/
-│   ├── reality/
-│   ├── story/
-│   └── adaptation/
-├── integrations/
-├── state/
-├── data/
+│   ├── reality/          # A's match_theme + tool registry
+│   ├── story/build_sidequest.py
+│   └── adaptation/       # C's planned tool
+├── api/
+│   └── events.py
+├── frontend/
+│   └── sidequest.html
+├── app.py
+├── app/                 # future orchestrator modules
+├── integrations/       # provider adapters
+├── state/               # shared session state
+├── data/                # local/demo data
 ├── tests/
 └── docs/
 
 ## Architecture
 
-The three feature pipelines should remain independently testable and communicate through shared structured data.
+The three feature pipelines remain independently testable and communicate through shared structured data.
 
 User Input
 → App / Orchestrator
@@ -75,7 +122,7 @@ User Input
 → Adaptation when needed
 → User Experience
 
-## Shared Data
+## Shared Data Contracts
 
 Before implementing tools, the team should agree on shared objects such as:
 
@@ -85,7 +132,7 @@ Before implementing tools, the team should agree on shared objects such as:
 - QuestState
 - RepairContext
 
-Exact schemas are still TBD.
+The Story starter currently returns a structured `SideQuest`; the remaining shared schemas can be refined without changing the ownership boundaries.
 
 ## Integration Layer
 
@@ -101,21 +148,21 @@ Possible integrations:
 
 ## Development Phases
 
-### Phase 1 — Skeleton
+### Phase 1 — Structure
 
 - [x] Create repository
 - [x] Define project concept
 - [x] Define three feature pipelines
 - [x] Create repository structure
-- [ ] Define shared data contracts
+- [x] Define feature ownership files
 - [ ] Define integration interfaces
 
 ### Phase 2 — Feature Pipelines
 
-- [ ] Reality / Places
-- [ ] Story / Experience
-- [ ] Adaptation / Memory
-- [ ] Unit tests
+- [x] Reality / Places implementation (A)
+- [x] Story / Experience implementation
+- [ ] Adaptation / Memory implementation (C)
+- [x] Story / Experience unit and API tests
 
 ### Phase 3 — Integration
 

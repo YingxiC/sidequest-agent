@@ -218,15 +218,26 @@
   .badge.updated { background: var(--accent-soft); color: var(--accent); }
   .badge.done { background: var(--panel-2); color: var(--ink-3); }
 
-  /* plan form (disabled until planning tools exist) */
+  /* plan form (locked until match_theme exists) */
   .plan { position: relative; }
   .plan form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .plan label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
   .plan label.wide { grid-column: 1 / -1; }
-  .plan input {
+  .plan input, .plan select {
     border: 1px solid var(--line); background: var(--bg); color: var(--ink);
     border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 14px;
   }
+  .personas { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; max-height: 92px; overflow-y: auto; }
+  .plan .persona {
+    grid-column: auto; padding: 3px 9px; border-radius: 999px; font-size: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-2);
+  }
+  .plan .persona:hover, .plan .persona.on { border-color: var(--accent); color: var(--accent); }
+  .plan .partial-note {
+    display: none; margin-top: 10px; font-size: 12px; color: var(--ink-2);
+    background: var(--panel-2); border-radius: 8px; padding: 7px 10px;
+  }
+  .plan.partial .partial-note { display: block; }
   .plan button { grid-column: 1 / -1; padding: 9px; }
   .plan.locked form { opacity: .45; pointer-events: none; user-select: none; }
   .plan .lock-note {
@@ -327,15 +338,24 @@
     <div class="card plan locked" id="plan-card">
       <h3>Plan a new SideQuest <span class="badge soon" id="plan-badge">Coming soon</span></h3>
       <form id="plan-form">
-        <label class="wide">Persona or theme
-          <input name="persona" placeholder="a 90s indie filmmaker" required /></label>
-        <label>City <input name="city" placeholder="New York" required /></label>
-        <label>Hours free <input name="hours" type="number" min="1" max="12" value="3" required /></label>
-        <label class="wide">Budget ($) <input name="budget" type="number" min="0" value="40" /></label>
-        <button class="primary" type="submit">Plan my SideQuest</button>
+        <label class="wide">Persona: pick one or write your own
+          <input name="persona" id="persona-input" placeholder="struggling novelist" required /></label>
+        <div class="personas" id="personas"></div>
+        <label class="wide">Neighborhood (NYC)
+          <select name="neighborhood">
+            <option>Morningside Heights</option>
+            <option selected>Greenwich Village</option>
+            <option>Chinatown</option>
+            <option>DUMBO</option>
+          </select></label>
+        <label>Hours free <input name="hours" type="number" min="1" max="12" value="2" required /></label>
+        <label>Budget ($) <input name="budget" type="number" min="0" value="40" /></label>
+        <button class="primary" type="submit" id="plan-submit">Plan my SideQuest</button>
       </form>
       <div class="lock-note" id="plan-note">Planning needs the Reality and Story tools, which aren't built yet.
         Load the demo SideQuest below to try repairs in the meantime.</div>
+      <div class="partial-note" id="plan-partial">For now this finds the best-matching real places.
+        Turning them into a full chaptered SideQuest arrives with build_sidequest (Story).</div>
     </div>
 
     <div class="card" id="quest-card">
@@ -365,6 +385,16 @@
   let busy = false;
   const seenStops = {};        // step_id -> {chapter, place}, to name dropped stops
 
+  // Reality's 20 preset personas (match_theme has curated weights for each).
+  const PERSONAS = [
+    "struggling novelist", "urban detective", "indie filmmaker", "architecture apprentice",
+    "city naturalist", "independent magazine editor", "jazz age drifter", "street photographer",
+    "hidden history archivist", "thrift fashion scout", "neighborhood food chronicler",
+    "waterfront poet", "campus intellectual", "avant garde theater actor", "urban sketch artist",
+    "community radio producer", "romantic city wanderer", "industrial design student",
+    "museum time traveler", "midnight mystery writer",
+  ];
+
   const CHIPS = [
     { text: "The gallery is closed and it's raining. Keep the novelist theme.", needs: ["repair"], quest: true },
     { text: "I don't want to walk that far.", needs: ["repair"], quest: true },
@@ -372,7 +402,7 @@
     { text: "Will it rain near my next stop?", needs: ["weather"], quest: true },
     { text: "Is it nice enough for a walk in New York right now?", needs: ["weather"] },
     { text: "What's my plan right now?", needs: ["memory"], quest: true },
-    { text: "Give me 3 hours in NYC as a 90s indie filmmaker.", needs: ["plan"] },
+    { text: "Plan a two-hour SideQuest as an urban detective in Chinatown.", needs: ["places"] },
   ];
 
   // ---------- helpers ----------
@@ -452,16 +482,25 @@
       el("span", { class: "fdesc", text: f.description }),
       el("span", { class: "ftools", text: f.tools.join(", ") + (f.available ? "" : "  (" + f.owner + ", not built yet)") }))));
 
-    const plan = featureMap.plan;
+    // Finding places (Reality) unlocks the form; building the itinerary (Story) completes it.
     const planCard = $("plan-card");
-    if (plan?.available) {
+    const badge = $("plan-badge");
+    if (has("places")) {
       planCard.classList.remove("locked");
-      $("plan-badge").className = "badge live";
-      $("plan-badge").textContent = "Live";
-      $("step1-text").textContent = "Fill in the planner on the right, or load the demo.";
-    } else if (plan) {
-      $("plan-note").textContent = `Planning needs ${plan.missing_tools.join(" and ")} (${plan.owner}), ` +
-        "which aren't built yet. Load the demo SideQuest below to try repairs in the meantime.";
+      if (has("plan")) {
+        badge.className = "badge live";
+        badge.textContent = "Live";
+        $("step1-text").textContent = "Pick a persona and neighborhood on the right, or load the demo.";
+      } else {
+        planCard.classList.add("partial");
+        badge.className = "badge soon";
+        badge.textContent = "Partly live";
+        $("plan-submit").textContent = "Find places for this persona";
+        $("step1-text").textContent = "Load the demo on the right. You can already find themed places with the planner; full itineraries are coming soon.";
+      }
+    } else if (featureMap.places) {
+      $("plan-note").textContent = `Planning needs ${featureMap.places.missing_tools.join(" and ")} ` +
+        `(${featureMap.places.owner}), which isn't built yet. Load the demo SideQuest below to try repairs in the meantime.`;
     }
     renderChips();
   }
@@ -617,12 +656,25 @@
     input.focus();
   }
 
+  // Persona quick-picks fill the persona field.
+  $("personas").replaceChildren(...PERSONAS.map(p => {
+    const b = el("button", { type: "button", class: "persona", text: p });
+    b.addEventListener("click", () => {
+      $("persona-input").value = p;
+      document.querySelectorAll(".persona.on").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+    });
+    return b;
+  }));
+
   $("plan-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    if (!has("plan")) return;
+    if (!has("places")) return;
     const f = new FormData(e.target);
+    const persona = f.get("persona").trim();
+    const article = /^[aeiou]/i.test(persona) ? "an" : "a";
     const budget = f.get("budget") ? ` My budget is $${f.get("budget")}.` : "";
-    send(`I have ${f.get("hours")} hours in ${f.get("city")}. Give me a day as ${f.get("persona")}.${budget}`);
+    send(`Plan a ${f.get("hours")}-hour SideQuest as ${article} ${persona} in ${f.get("neighborhood")}.${budget}`);
   });
 
   $("new-session").addEventListener("click", async () => {
