@@ -38,6 +38,30 @@ def test_errors_and_custom_persona():
     assert custom["ok"] and custom["profile_used"] == "custom"
 
 
+def test_custom_persona_uses_controlled_llm_analysis():
+    result = match_theme("lonely jazz photographer", "DUMBO",
+        desired_tags=["music", "photography", "street", "not-a-real-tag"],
+        avoid_tags=["touristy", "made-up"], story_tone="noir and reflective",
+        use_live_places=False)
+    assert result["ok"] and result["profile_used"] == "custom"
+    analysis = result["role_analysis"]
+    assert analysis["desired_tags"] == ["music", "photography", "street"]
+    assert analysis["avoid_tags"] == ["touristy"]
+    assert analysis["story_tone"] == "noir and reflective"
+    assert analysis["ignored_tags"] == ["made up", "not a real tag"]
+    assert any("photography" in reason or "street" in reason
+               for place in result["places"] for reason in place["match_reasons"])
+
+
+def test_custom_tags_can_refine_a_preset():
+    result = match_theme("indie filmmaker", "DUMBO",
+                         desired_tags=["quiet", "waterfront"],
+                         avoid_tags=["touristy"], use_live_places=False)
+    assert result["ok"]
+    assert result["profile_used"] == "indie filmmaker"
+    assert result["role_analysis"]["desired_tags"] == ["quiet", "waterfront"]
+
+
 def test_output_converts_to_shared_candidates():
     result = match_theme("architecture apprentice", "Morningside Heights", use_live_places=False)
     places = candidate_places(result)

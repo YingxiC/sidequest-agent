@@ -24,11 +24,14 @@ _DECLARATIONS = [
         "neighborhood": {"type": "string", "description": "One supported NYC neighborhood."},
         "categories": {"type": "array", "items": {"type": "string"}, "description": "Optional categories or tags such as bookstore, park, gallery, or cafe."},
         "max_results": {"type": "integer", "description": "Maximum number of candidates, from 1 to 20."}}, "required": ["neighborhood"]}},
-    {"name": "match_theme", "description": "Original Reality tool that finds and ranks viable places for the persona the user wants to experience. Use it for a brand-new SideQuest before build_sidequest. It applies explainable theme weights, excludes reported-closed places, respects atmosphere preferences, and returns a category-diverse shortlist within one supported NYC neighborhood.",
+    {"name": "match_theme", "description": "Original Reality tool that finds and ranks viable places for the persona the user wants to experience. Use it for a brand-new SideQuest before build_sidequest. Six preset personas receive curated weights. For any custom persona, first interpret it into desired_tags, avoid_tags, and story_tone using only the allowed vocabulary below. The tool then applies explainable deterministic scoring, excludes reported-closed places, and returns a category-diverse shortlist.",
      "parameters": {"type": "object", "properties": {
-        "persona": {"type": "string", "description": "Persona or lens, such as struggling novelist or urban detective."},
+        "persona": {"type": "string", "description": "Persona or lens. Presets: struggling novelist, urban detective, indie filmmaker, architecture apprentice, city naturalist, independent magazine editor. Other creative personas are allowed when desired_tags are supplied."},
         "neighborhood": {"type": "string", "description": "One supported NYC neighborhood."},
-        "preferences": {"type": "array", "items": {"type": "string"}, "description": "Optional desired qualities such as quiet, free, historic, art, or nature."},
+        "preferences": {"type": "array", "items": {"type": "string"}, "description": "Optional qualities explicitly requested by the user, such as quiet, free, historic, art, or nature."},
+        "desired_tags": {"type": "array", "items": {"type": "string", "enum": ["academic", "architecture", "archive", "art", "bookstore", "cafe", "cinematic", "community", "creative", "design", "dramatic", "food", "free", "gallery", "historic", "history", "independent", "industrial", "inspiration", "landmark", "library", "literary", "low cost", "museum", "music", "mysterious", "nature", "nostalgic", "observation", "park", "people watching", "photography", "playful", "quiet", "reflection", "storytelling", "street", "theater", "touristy", "waterfront", "writing"]}, "description": "For a custom persona, infer 3-6 desired qualities using only these controlled tags. May also refine a preset."},
+        "avoid_tags": {"type": "array", "items": {"type": "string", "enum": ["chain", "crowded", "luxury", "touristy"]}, "description": "Infer qualities the persona or user wants to avoid using only these controlled negative tags."},
+        "story_tone": {"type": "string", "description": "Short narrative tone inferred from a custom persona, such as noir and reflective. Returned for the Story pipeline; it never overrides place facts."},
         "max_results": {"type": "integer", "description": "Maximum diverse matches to return, usually 4 to 6."}},
       "required": ["persona", "neighborhood"]}},
 ]

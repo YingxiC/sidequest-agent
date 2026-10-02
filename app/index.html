@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Gemini Web Tool Calling</title>
+        <title>Day as Someone</title>
         <style>
             * {
                 box-sizing: border-box;
@@ -24,6 +24,28 @@
                 display: flex;
                 flex-direction: column;
                 border: 1px solid #e0e0e0;
+            }
+            #intro {
+                padding: 1.5rem 2rem;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            #intro h1 { font: 500 1.8rem/1.2 Georgia, serif; margin-bottom: .35rem; }
+            #intro p { color: #666; line-height: 1.5; }
+            #quick-start { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+            .persona {
+                padding: .5rem .7rem;
+                color: #333;
+                background: #f4f1ea;
+                border: 1px solid #ddd5c8;
+                text-transform: none;
+                letter-spacing: 0;
+                font-size: .8rem;
+            }
+            #neighborhood {
+                margin-top: 1rem;
+                padding: .5rem;
+                border: 1px solid #ddd;
+                background: white;
             }
             #messages {
                 overflow-y: auto;
@@ -102,12 +124,30 @@
     </head>
     <body>
         <div id="container">
+            <section id="intro">
+                <h1>Day as Someone</h1>
+                <p>Choose a ready-made persona or describe your own. The agent turns it into a real, themed NYC micro-adventure.</p>
+                <select id="neighborhood" aria-label="Neighborhood">
+                    <option>Morningside Heights</option>
+                    <option>Greenwich Village</option>
+                    <option>Chinatown</option>
+                    <option>DUMBO</option>
+                </select>
+                <div id="quick-start">
+                    <button class="persona" data-persona="struggling novelist">Struggling novelist</button>
+                    <button class="persona" data-persona="urban detective">Urban detective</button>
+                    <button class="persona" data-persona="indie filmmaker">Indie filmmaker</button>
+                    <button class="persona" data-persona="architecture apprentice">Architecture apprentice</button>
+                    <button class="persona" data-persona="city naturalist">City naturalist</button>
+                    <button class="persona" data-persona="independent magazine editor">Magazine editor</button>
+                </div>
+            </section>
             <div id="messages"></div>
             <div id="input-area">
                 <input
                     type="text"
                     id="user-input"
-                    placeholder="Type a message..."
+                    placeholder="Or describe your own persona, time, and preferences..."
                     autocomplete="off"
                 />
                 <button id="send-btn">Send</button>
@@ -185,6 +225,13 @@
             }
 
             sendBtn.addEventListener("click", send);
+            document.querySelectorAll(".persona").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const neighborhood = document.getElementById("neighborhood").value;
+                    userInput.value = `Plan a two-hour SideQuest as a ${button.dataset.persona} in ${neighborhood}.`;
+                    userInput.focus();
+                });
+            });
             userInput.addEventListener("keydown", function (e) {
                 if (e.key === "Enter") send();
             });

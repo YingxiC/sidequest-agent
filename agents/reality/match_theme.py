@@ -31,6 +31,20 @@ ALIASES = {"novelist": "struggling novelist", "writer": "struggling novelist",
     "architect": "architecture apprentice", "naturalist": "city naturalist",
     "editor": "independent magazine editor"}
 
+# The model may describe a new persona, but it must translate that description
+# into this vocabulary. Every positive tag below exists in the curated data, so
+# a creative persona still has something concrete and testable to match against.
+TAG_VOCABULARY = {
+    "academic", "architecture", "archive", "art", "bookstore", "cafe",
+    "cinematic", "community", "creative", "design", "dramatic", "food",
+    "free", "gallery", "historic", "history", "independent", "industrial",
+    "inspiration", "landmark", "library", "literary", "low cost", "museum",
+    "music", "mysterious", "nature", "nostalgic", "observation", "park",
+    "people watching", "photography", "playful", "quiet", "reflection",
+    "storytelling", "street", "theater", "touristy", "waterfront", "writing",
+}
+AVOID_TAG_VOCABULARY = TAG_VOCABULARY | {"chain", "crowded", "luxury"}
+
 
 @dataclass
 class ScoredPlace:
@@ -44,10 +58,18 @@ class ScoredPlace:
 
 
 def match_theme(persona: str, neighborhood: str, preferences: list[str] | None = None,
-                max_results: int = 6, *, use_live_places: bool = True) -> dict[str, Any]:
+                desired_tags: list[str] | None = None, avoid_tags: list[str] | None = None,
+                story_tone: str | None = None, max_results: int = 6, *,
+                use_live_places: bool = True) -> dict[str, Any]:
     if not str(persona).strip():
         return _error("Persona is required.", "Ask what kind of person the user wants to be for the day.")
     profile_name, preferred, avoided = _profile_for(persona)
+    requested, ignored_desired = _controlled_tags(desired_tags, TAG_VOCABULARY)
+    rejected, ignored_avoid = _controlled_tags(avoid_tags, AVOID_TAG_VOCABULARY)
+    # Custom tags supplement a preset profile too. This lets users ask for an
+    # "filmmaker, but quiet and waterfront" without losing the preset weights.
+    preferred = {**preferred, **{tag: 20 for tag in requested}}
+    avoided = {**avoided, **{tag: -20 for tag in rejected}}
     prefs = {_tag(p) for p in (preferences or []) if str(p).strip()}
     categories = _search_categories(preferred | {p: 1 for p in prefs})
     found = search_places(neighborhood, categories, 20, use_live=use_live_places)
@@ -87,6 +109,10 @@ def match_theme(persona: str, neighborhood: str, preferences: list[str] | None =
         return _error(f"No currently viable places matched {persona!r} in {neighborhood!r}.",
                       "Try another supported neighborhood, remove a preference, or use a broader persona.")
     return {"ok": True, "persona": persona.strip(), "profile_used": profile_name,
+            "role_analysis": {"desired_tags": sorted(requested),
+                              "avoid_tags": sorted(rejected),
+                              "story_tone": str(story_tone or "").strip(),
+                              "ignored_tags": sorted(ignored_desired | ignored_avoid)},
             "neighborhood": selected[0].record.neighborhood, "source": found.source,
             "places": [p.to_dict() for p in selected], "excluded": excluded,
             **({"warning": found.fix} if found.fix else {})}
@@ -104,6 +130,11 @@ def _profile_for(persona: str):
     if name == "custom":
         return name, {"creative": 10, "observation": 8, "independent": 6}, {"chain": -10}
     return name, PERSONA_PROFILES[name]["preferred"], PERSONA_PROFILES[name]["avoid"]
+
+
+def _controlled_tags(values, allowed):
+    normalized = {_tag(value) for value in (values or []) if str(value).strip()}
+    return normalized & allowed, normalized - allowed
 
 
 def _search_categories(weights):
