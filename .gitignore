@@ -1,0 +1,19 @@
+# Virtual environment. uv recreates it from pyproject.toml + uv.lock.
+.venv/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local secrets and config. Commit .env.example instead, never .env.
+.env
+
+# Session files written by JsonFileSessionStore
+state/sessions/
+
+# The original starter download; its code now lives in app/
+gemini-web-tool-calling.zip
+
+# macOS
+.DS_Store

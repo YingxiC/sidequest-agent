@@ -34,6 +34,20 @@ User Request
 
 The tool names above are placeholders only. Their implementations will be added later.
 
+## Running Locally
+
+Built on the course's `gemini-web-tool-calling` starter (FastAPI + LiteLLM + Gemini on Vertex AI).
+
+1. A GCP project with billing and the Vertex AI / Agent Platform API enabled
+2. `gcloud auth application-default login`
+3. From the repo root: `uv run python -m app.main`, then open http://localhost:8000
+
+Tests: `uv run pytest`
+
+To add a pipeline's tools, give it a `tools.py` with `TOOLS`, `TOOL_FUNCTIONS` and
+`run_tool(name, args, session_id)` (see `agents/adaptation/tools.py`) and register it in
+`app/tools.py`.
+
 ## Repository Structure
 
 sidequest-agent/

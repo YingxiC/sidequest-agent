@@ -1,0 +1,19 @@
+[project]
+name = "sidequest-agent"
+version = "0.1.0"
+description = "Day as Someone: a Gemini tool-calling web agent that turns your city into a themed SideQuest"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn>=0.27.0",
+    "litellm>=1.50",
+    "google-cloud-aiplatform>=1.40.0",
+    "requests>=2.31",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
