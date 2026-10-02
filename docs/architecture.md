@@ -14,25 +14,19 @@ Location:
 
 Responsible for place discovery, real-world constraints, and feasibility.
 
-Location:
-
-`agents/reality/`
+Planned files: `agents/reality/match_theme.py`, `api/places.py`, `frontend/places.html`
 
 ### Story / Experience
 
 Responsible for transforming viable places into a coherent SideQuest experience.
 
-Location:
-
-`agents/story/`
+Owned files: `agents/story/build_sidequest.py`, `api/events.py`, `frontend/sidequest.html`
 
 ### Adaptation / Memory
 
 Responsible for session state and repairing an active SideQuest when conditions change.
 
-Location:
-
-`agents/adaptation/`
+Planned files: `agents/adaptation/repair_sidequest.py`, `api/weather.py`, `frontend/repair.html`
 
 ## Shared Contracts
 
@@ -44,7 +38,7 @@ UserRequest
 → QuestState
 → Repaired SideQuest
 
-Concrete schemas are still TBD.
+The Story pipeline returns a validated `SideQuest`; the other contracts can evolve while these ownership boundaries stay stable.
 
 ## Integration Boundary
 

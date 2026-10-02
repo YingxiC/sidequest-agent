@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SideQuest / Story</title>
+    <style>
+        :root { --ink: #20251f; --paper: #f4f0e6; --accent: #d85c38; --line: #c9c1b0; --muted: #6d7166; }
+        * { box-sizing: border-box; }
+        body { margin: 0; color: var(--ink); background: radial-gradient(circle at 80% 10%, #e5d7b8, transparent 32%), var(--paper); font: 16px/1.5 Georgia, serif; }
+        main { width: min(1100px, 100%); margin: auto; padding: 6vh 6vw; }
+        header { display: flex; justify-content: space-between; gap: 2rem; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 2rem; }
+        .eyebrow { color: var(--accent); font: 700 12px/1.2 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+        h1 { max-width: 650px; margin: .5rem 0 0; font-size: clamp(2.4rem, 7vw, 6rem); line-height: .95; font-weight: 400; }
+        .layout { display: grid; grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); gap: 5rem; padding-top: 3rem; }
+        label { display: block; margin: 1.2rem 0 .35rem; color: var(--muted); font: 700 12px ui-monospace, monospace; text-transform: uppercase; letter-spacing: .08em; }
+        input, textarea { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: .65rem 0; color: inherit; font: 1.1rem Georgia, serif; outline: none; }
+        textarea { min-height: 90px; resize: vertical; }
+        .check { display: flex; gap: .5rem; align-items: center; text-transform: none; letter-spacing: 0; font: 1rem Georgia, serif; color: var(--ink); }
+        .check input { width: auto; accent-color: var(--accent); }
+        button { margin-top: 2rem; border: 0; background: var(--ink); color: var(--paper); padding: .9rem 1.3rem; font: 700 12px ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+        button:disabled { opacity: .5; cursor: wait; }
+        #result { min-height: 300px; }
+        .empty { color: var(--muted); font-size: 1.4rem; }
+        .quest-title { margin: 0; font-size: clamp(2rem, 4vw, 4rem); font-weight: 400; line-height: 1; }
+        .opening, .closing { color: var(--muted); font-style: italic; }
+        .stop { display: grid; grid-template-columns: 2.5rem 1fr auto; gap: 1rem; align-items: start; border-top: 1px solid var(--line); padding: 1.2rem 0; }
+        .number { color: var(--accent); font: 700 1.2rem ui-monospace, monospace; }
+        .stop h3 { margin: 0; font-size: 1.35rem; font-weight: 400; }
+        .chapter { margin: 2rem 0; }
+        .chapter-head { border-left: 3px solid var(--accent); padding-left: 1rem; margin-bottom: .5rem; }
+        .chapter-head h3 { margin: .25rem 0 0; font-size: 1.6rem; font-weight: 400; }
+        .chapter-head p { margin: .25rem 0; color: var(--muted); }
+        .stop h4 { margin: 0; font-size: 1.25rem; font-weight: 400; }
+        .stop ul { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: .6rem 0 0; padding-left: 1rem; color: var(--muted); }
+        .event { color: var(--accent); font: 700 11px ui-monospace, monospace; text-transform: uppercase; }
+        .budget { border-top: 1px solid var(--line); padding-top: 1rem; font: 700 12px ui-monospace, monospace; text-transform: uppercase; }
+        .stop p { margin: .25rem 0 0; color: var(--muted); }
+        .minutes { color: var(--muted); font: 12px ui-monospace, monospace; white-space: nowrap; }
+        @media (max-width: 700px) { header, .layout { display: block; } .layout { padding-top: 2rem; } #result { margin-top: 4rem; } }
+    </style>
+</head>
+<body>
+<main>
+    <header><div><div class="eyebrow">Story / Experience</div><h1>Build a day worth remembering.</h1></div><div class="eyebrow">B / 01</div></header>
+    <div class="layout">
+        <form id="quest-form">
+            <label for="message">What kind of day?</label>
+            <textarea id="message" required placeholder="I have three hours and want to see my city as a 90s indie filmmaker."></textarea>
+            <label for="theme">Lens or persona</label>
+            <input id="theme" value="curious observer">
+            <label for="duration">Available minutes</label>
+            <input id="duration" type="number" min="30" max="720" value="120">
+            <label for="places">Places, one per line</label>
+            <textarea id="places" placeholder="Optional: a bookshop&#10;a riverside path&#10;a neighborhood cinema"></textarea>
+            <label for="budget">Budget limit</label>
+            <input id="budget" type="number" min="0" step="0.01" value="0" placeholder="0 = not set">
+            <label for="city">City for optional events</label>
+            <input id="city" placeholder="Optional: New York">
+            <label class="check"><input id="include-events" type="checkbox"> Add live events when configured</label>
+            <button id="submit" type="submit">Compose SideQuest</button>
+        </form>
+        <section id="result"><p class="empty">Your route will become a small story here.</p></section>
+    </div>
+</main>
+<script>
+const form = document.querySelector('#quest-form');
+const result = document.querySelector('#result');
+const button = document.querySelector('#submit');
+let sessionId = null;
+form.addEventListener('submit', async (event) => {
+    event.preventDefault(); button.disabled = true; button.textContent = 'Composing...';
+    const places = document.querySelector('#places').value.split('\n').map((item) => item.trim()).filter(Boolean);
+    try {
+        const response = await fetch('/api/events', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+            message: document.querySelector('#message').value, theme: document.querySelector('#theme').value,
+            duration_minutes: Number(document.querySelector('#duration').value), places, session_id: sessionId,
+            budget_limit: Number(document.querySelector('#budget').value), city: document.querySelector('#city').value,
+            include_events: document.querySelector('#include-events').checked
+        }) });
+        if (!response.ok) throw new Error('The story service could not respond.');
+        const data = await response.json(); sessionId = data.session_id; render(data.sidequest, data.mode);
+    } catch (error) { result.innerHTML = `<p class="empty">${error.message}</p>`; }
+    button.disabled = false; button.textContent = 'Compose SideQuest';
+});
+function render(quest, mode) {
+    const safe = (value) => String(value).replace(/[&<>"']/g, (character) => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[character]));
+    const chapters = quest.chapters.map((chapter) => `<section class="chapter"><div class="chapter-head"><span class="eyebrow">Chapter 0${safe(chapter.order)}</span><h3>${safe(chapter.title)}</h3><p>${safe(chapter.purpose)}</p></div>${chapter.stops.map((stop) => `<article class="stop"><div class="number">0${safe(stop.order)}</div><div><h4>${safe(stop.place)}${stop.event ? ` <span class="event">Event: ${safe(stop.event)}</span>` : ''}</h4><p>${safe(stop.prompt)}</p><ul>${stop.micro_tasks.map((task) => `<li>${safe(task)}</li>`).join('')}</ul></div><div class="minutes">${safe(stop.minutes)} min<br>$${safe(stop.estimated_cost.toFixed(2))}</div></article>`).join('')}</section>`).join('');
+    result.innerHTML = `<div class="eyebrow">${safe(mode)} composition / ${safe(quest.duration_minutes)} minutes / ${safe(quest.budget_status)}</div><h2 class="quest-title">${safe(quest.title)}</h2><p class="opening">${safe(quest.opening)}</p>${chapters}<p class="budget">Estimated spend: $${safe(quest.estimated_cost.toFixed(2))}</p><p class="closing">${safe(quest.closing)}</p>`;
+}
+</script>
+</body>
+</html>
