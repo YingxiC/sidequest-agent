@@ -1,5 +1,5 @@
 import json
-from agents.reality.match_theme import candidate_places, match_theme
+from agents.reality.match_theme import PERSONA_PROFILES, candidate_places, match_theme
 from agents.reality import tools
 from app import tools as registry
 from integrations.places import PLACES_URL, search_places
@@ -16,6 +16,24 @@ def test_personas_produce_different_rankings():
     a = match_theme("novelist", "Greenwich Village", use_live_places=False)
     b = match_theme("indie filmmaker", "Greenwich Village", use_live_places=False)
     assert [p["place_id"] for p in a["places"][:3]] != [p["place_id"] for p in b["places"][:3]]
+
+
+def test_twenty_presets_are_viable_and_explainable():
+    assert len(PERSONA_PROFILES) == 20
+    for persona in PERSONA_PROFILES:
+        result = match_theme(persona, "DUMBO", max_results=4, use_live_places=False)
+        assert result["ok"] and result["profile_used"] == persona
+        assert len(result["places"]) == 4
+        assert all(place["match_reasons"] for place in result["places"])
+
+
+def test_new_persona_aliases_resolve_to_presets():
+    assert match_theme("jazz musician", "Chinatown", use_live_places=False)["profile_used"] == "jazz age drifter"
+    assert match_theme("food writer", "Chinatown", use_live_places=False)["profile_used"] == "neighborhood food chronicler"
+    assert match_theme("melancholy poet", "DUMBO", use_live_places=False)["profile_used"] == "waterfront poet"
+    assert match_theme("radio producer", "DUMBO", use_live_places=False)["profile_used"] == "community radio producer"
+    assert match_theme("noir writer", "Chinatown", use_live_places=False)["profile_used"] == "midnight mystery writer"
+    assert match_theme("time traveler", "Morningside Heights", use_live_places=False)["profile_used"] == "museum time traveler"
 
 
 def test_results_stay_in_neighborhood_and_are_diverse():
@@ -39,7 +57,7 @@ def test_errors_and_custom_persona():
 
 
 def test_custom_persona_uses_controlled_llm_analysis():
-    result = match_theme("lonely jazz photographer", "DUMBO",
+    result = match_theme("nocturnal image-maker", "DUMBO",
         desired_tags=["music", "photography", "street", "not-a-real-tag"],
         avoid_tags=["touristy", "made-up"], story_tone="noir and reflective",
         use_live_places=False)

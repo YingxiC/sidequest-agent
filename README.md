@@ -39,9 +39,13 @@ Chinatown, and DUMBO. It works from the curated `data/nyc_places.json` dataset
 without credentials. Set `GOOGLE_MAPS_API_KEY` to add live Google Places Text
 Search results; failures automatically fall back to the curated dataset.
 
-Reality includes six curated personas: struggling novelist, urban detective,
+Reality includes twenty curated personas: struggling novelist, urban detective,
 indie filmmaker, architecture apprentice, city naturalist, and independent
-magazine editor. Other personas are also accepted: the model translates them
+magazine editor, plus jazz age drifter, street photographer, hidden history
+archivist, thrift fashion scout, neighborhood food chronicler, and waterfront
+poet, campus intellectual, avant garde theater actor, urban sketch artist,
+community radio producer, romantic city wanderer, industrial design student,
+museum time traveler, and midnight mystery writer. Other personas are also accepted: the model translates them
 into a controlled place-tag vocabulary, and `match_theme` performs the final
 deterministic, explainable scoring. Unknown tags are ignored rather than being
 used to invent unsupported place attributes.

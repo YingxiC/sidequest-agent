@@ -25,11 +25,64 @@ PERSONA_PROFILES = {
     "independent magazine editor": {"preferred": {"independent": 26, "design": 20,
         "creative": 18, "archive": 16, "community": 12, "bookstore": 10, "art": 10},
         "avoid": {"chain": -25, "luxury": -8}},
+    "jazz age drifter": {"preferred": {"music": 30, "historic": 22, "nostalgic": 20,
+        "street": 14, "dramatic": 12, "independent": 10, "reflection": 8},
+        "avoid": {"chain": -25, "luxury": -10}},
+    "street photographer": {"preferred": {"photography": 30, "street": 24,
+        "observation": 20, "dramatic": 14, "architecture": 12, "people watching": 12,
+        "waterfront": 8}, "avoid": {"chain": -18, "luxury": -8}},
+    "hidden history archivist": {"preferred": {"archive": 30, "history": 26,
+        "historic": 22, "library": 18, "museum": 14, "mysterious": 12,
+        "architecture": 8}, "avoid": {"chain": -20, "touristy": -12}},
+    "thrift fashion scout": {"preferred": {"design": 28, "independent": 24,
+        "creative": 20, "street": 16, "art": 12, "playful": 10, "community": 8},
+        "avoid": {"luxury": -28, "chain": -24}},
+    "neighborhood food chronicler": {"preferred": {"food": 30, "community": 24,
+        "storytelling": 20, "historic": 14, "street": 12, "independent": 10,
+        "observation": 8}, "avoid": {"chain": -25, "luxury": -10}},
+    "waterfront poet": {"preferred": {"waterfront": 30, "reflection": 24,
+        "writing": 20, "quiet": 18, "nature": 14, "dramatic": 10,
+        "inspiration": 10}, "avoid": {"crowded": -22, "touristy": -10}},
+    "campus intellectual": {"preferred": {"academic": 30, "library": 24,
+        "bookstore": 20, "history": 16, "architecture": 12, "quiet": 12,
+        "reflection": 8}, "avoid": {"touristy": -16, "luxury": -12}},
+    "avant garde theater actor": {"preferred": {"theater": 30, "dramatic": 26,
+        "creative": 20, "playful": 16, "independent": 14, "storytelling": 12,
+        "historic": 6}, "avoid": {"chain": -24, "luxury": -8}},
+    "urban sketch artist": {"preferred": {"art": 28, "architecture": 24,
+        "observation": 22, "street": 18, "design": 14, "waterfront": 10,
+        "quiet": 8}, "avoid": {"crowded": -16, "chain": -12}},
+    "community radio producer": {"preferred": {"community": 30, "music": 24,
+        "storytelling": 22, "observation": 16, "independent": 14, "street": 10,
+        "archive": 8}, "avoid": {"chain": -24, "luxury": -12}},
+    "romantic city wanderer": {"preferred": {"nostalgic": 28, "reflection": 22,
+        "waterfront": 18, "historic": 16, "quiet": 14, "nature": 12,
+        "inspiration": 10}, "avoid": {"crowded": -20, "chain": -12}},
+    "industrial design student": {"preferred": {"industrial": 30, "design": 26,
+        "architecture": 22, "creative": 16, "landmark": 12, "observation": 10,
+        "museum": 8}, "avoid": {"chain": -14, "touristy": -8}},
+    "museum time traveler": {"preferred": {"museum": 30, "history": 26,
+        "historic": 22, "archive": 18, "mysterious": 14, "storytelling": 10,
+        "architecture": 8}, "avoid": {"chain": -20, "luxury": -8}},
+    "midnight mystery writer": {"preferred": {"mysterious": 30, "writing": 24,
+        "dramatic": 20, "historic": 16, "street": 14, "literary": 12,
+        "observation": 10}, "avoid": {"playful": -12, "chain": -20}},
 }
 ALIASES = {"novelist": "struggling novelist", "writer": "struggling novelist",
     "detective": "urban detective", "filmmaker": "indie filmmaker",
     "architect": "architecture apprentice", "naturalist": "city naturalist",
-    "editor": "independent magazine editor"}
+    "editor": "independent magazine editor", "jazz": "jazz age drifter",
+    "photographer": "street photographer", "archivist": "hidden history archivist",
+    "fashion": "thrift fashion scout", "food chronicler": "neighborhood food chronicler",
+    "food writer": "neighborhood food chronicler", "poet": "waterfront poet",
+    "intellectual": "campus intellectual", "student scholar": "campus intellectual",
+    "actor": "avant garde theater actor", "theater actor": "avant garde theater actor",
+    "sketch artist": "urban sketch artist", "illustrator": "urban sketch artist",
+    "radio producer": "community radio producer", "podcaster": "community radio producer",
+    "romantic": "romantic city wanderer", "wanderer": "romantic city wanderer",
+    "industrial designer": "industrial design student", "design student": "industrial design student",
+    "time traveler": "museum time traveler", "historian": "museum time traveler",
+    "mystery writer": "midnight mystery writer", "noir writer": "midnight mystery writer"}
 
 # The model may describe a new persona, but it must translate that description
 # into this vocabulary. Every positive tag below exists in the curated data, so
@@ -126,7 +179,9 @@ def candidate_places(result: dict[str, Any]):
 
 def _profile_for(persona: str):
     text = " ".join(persona.lower().split())
-    name = text if text in PERSONA_PROFILES else next((c for a, c in ALIASES.items() if a in text), "custom")
+    # Prefer a specific phrase such as "food writer" over the shorter "writer".
+    aliases = sorted(ALIASES.items(), key=lambda item: len(item[0]), reverse=True)
+    name = text if text in PERSONA_PROFILES else next((c for a, c in aliases if a in text), "custom")
     if name == "custom":
         return name, {"creative": 10, "observation": 8, "independent": 6}, {"chain": -10}
     return name, PERSONA_PROFILES[name]["preferred"], PERSONA_PROFILES[name]["avoid"]
