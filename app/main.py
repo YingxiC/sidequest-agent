@@ -95,6 +95,7 @@ def run_agent(messages: list[dict], session_id: str) -> tuple[str, list[dict]]:
             vertex_location="global",
             messages=messages,
             tools=TOOLS,
+            num_retries=3,  # ride out dropped connections (SSL EOF, resets)
         ).choices[0].message
 
         # Append assistant's reply (text, tool calls, or both) to the context.
@@ -126,7 +127,9 @@ def describe_model_error(e: Exception) -> str:
     """One readable line plus how to fix it, instead of a provider traceback."""
     detail = (str(e).strip().splitlines() or [type(e).__name__])[0][:300]
     text = str(e).lower()
-    if "credentials" in text or "default credentials" in text:
+    if "connection" in text or "ssl" in text or "timed out" in text:
+        hint = "Network problem reaching Google (VPN/proxy?). Check your connection and try again."
+    elif "credentials" in text or "default credentials" in text:
         hint = "Run `gcloud auth application-default login`, then restart the server."
     elif "sdk not found" in text or "aiplatform" in text:
         hint = "Install the dependencies with `uv sync` (needs google-cloud-aiplatform)."

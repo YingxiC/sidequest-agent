@@ -72,6 +72,7 @@ def _model_sidequest(request: EventRequest) -> tuple[SideQuest, list[dict[str, A
             vertex_location=os.getenv("VERTEX_LOCATION", "global"),
             messages=messages,
             tools=[BUILD_SIDEQUEST_TOOL],
+            num_retries=3,
         ).choices[0].message
         messages.append(reply.model_dump())
         if not reply.tool_calls:
