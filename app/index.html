@@ -667,6 +667,10 @@
       return `${result.condition}${t} at ${result.location?.label ?? "?"}`;
     }
     if (name === "get_current_sidequest") return `v${result.sidequest?.version}, ${result.sidequest?.stops?.length} stops`;
+    if (name === "build_sidequest") {
+      const n = Object.keys(result.step_ids || {}).length;
+      return `${result.sidequest?.title ?? "SideQuest"}, ${n} stop${n === 1 ? "" : "s"}`;
+    }
     if (name === "match_theme") {
       const n = (result.matches || result.places || []).length;
       return n ? `${n} matching places` : "ok";

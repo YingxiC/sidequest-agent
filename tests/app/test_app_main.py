@@ -11,6 +11,7 @@ pytest.importorskip("litellm")
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app import main  # noqa: E402
+from app import tools as registry  # noqa: E402
 
 
 class FakeMessage(SimpleNamespace):
@@ -49,14 +50,37 @@ def test_index_and_status(client):
     feats = {f["id"]: f for f in client.get("/api/status").json()["features"]}
     assert feats["repair"]["available"] and feats["weather"]["available"]
     assert feats["places"]["available"]  # Reality's match_theme is registered
-    assert not feats["plan"]["available"]
-    assert feats["plan"]["missing_tools"] == ["build_sidequest"]
+    assert feats["plan"]["available"]  # Story's build_sidequest is registered
+    assert all(f["available"] for f in feats.values())
 
 
-def test_system_prompt_mentions_missing_features():
+def test_system_prompt_chains_match_theme_into_build_sidequest():
     prompt = main.build_system_prompt()
-    assert "Not available yet" in prompt and "Build the full SideQuest" in prompt
-    assert "match_theme" in prompt
+    assert "match_theme" in prompt and "call build_sidequest" in prompt
+    assert "Not available yet" not in prompt
+
+
+def test_build_sidequest_becomes_the_repairable_quest():
+    places = ["Washington Square Park", "Jefferson Market Library", "Three Lives & Company"]
+    built = json.loads(registry.run_tool("build_sidequest", {
+        "theme": "city naturalist", "duration_minutes": 120, "places": places, "budget_limit": 40,
+    }, "s-built"))
+    assert built["ok"] and list(built["step_ids"].values()) == places
+
+    current = json.loads(registry.run_tool("get_current_sidequest", {}, "s-built"))["sidequest"]
+    assert [s["place"] for s in current["stops"]] == places
+    assert current["stops"][0]["indoor"] is False  # resolved from the curated place data
+    assert current["stops"][1]["walk_min_from_prev"] > 0
+
+    repaired = json.loads(registry.run_tool("repair_sidequest", {"skip_stops": ["s3"]}, "s-built"))
+    assert repaired["ok"] and repaired["actions"][0]["step_id"] == "s3"
+
+
+def test_build_sidequest_without_places_asks_for_match_theme():
+    out = json.loads(registry.run_tool("build_sidequest", {
+        "theme": "urban detective", "duration_minutes": 90, "places": [],
+    }, "s-empty"))
+    assert not out["ok"] and "match_theme" in out["fix"]
 
 
 def test_demo_then_repair_through_chat(client, monkeypatch):

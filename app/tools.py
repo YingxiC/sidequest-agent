@@ -14,9 +14,9 @@ import json
 
 from agents.adaptation import tools as adaptation_tools
 from agents.reality import tools as reality_tools
+from agents.story import tools as story_tools
 
-# Story still needs a pipeline-compatible tools.py from its owner.
-PIPELINES = [reality_tools, adaptation_tools]
+PIPELINES = [reality_tools, story_tools, adaptation_tools]
 
 TOOLS = [decl for module in PIPELINES for decl in module.TOOLS]
 

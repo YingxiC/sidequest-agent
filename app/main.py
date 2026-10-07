@@ -28,7 +28,7 @@ from pydantic import BaseModel
 from agents.adaptation import tools as adaptation_tools
 from agents.adaptation.schemas import place_from_dict, sidequest_from_dict
 from api.events import router as events_router
-from app.tools import TOOLS, clear_session, features, run_tool
+from app.tools import TOOLS, available_tools, clear_session, features, run_tool
 
 # --- Config ---
 
@@ -54,6 +54,14 @@ def build_system_prompt() -> str:
         "time traveler, and midnight mystery writer. For any other persona, infer 3-6 "
         "desired_tags, optional avoid_tags, and a short story_tone from the match_theme schema; "
         "never invent tags outside its enum.\n"
+    )
+    if "build_sidequest" in available_tools():
+        prompt += (
+            "Then call build_sidequest with the persona as theme, the shortlisted place names "
+            "in visit order, the user's available minutes, and their budget if given. If you "
+            "don't know how much time they have, ask before building.\n"
+        )
+    prompt += (
         "Once a SideQuest exists, keep it alive across the conversation:\n"
         "- When something changes (a venue is closed, an event is cancelled, it rains, the "
         "budget or time changes, the user doesn't want to walk that far, or wants to skip a "
