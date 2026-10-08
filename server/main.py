@@ -1,7 +1,7 @@
 """Web server + agent harness, based on the gemini-web-tool-calling starter.
 
 Changes from the starter:
-- tools come from app/tools.py, which merges all three pipelines,
+- tools come from server/tools.py, which merges all three pipelines,
 - run_agent() passes session_id through so tools can read/write the
   session's SideQuest (the model never sees or chooses it),
 - malformed tool arguments are reported to the model instead of crashing,
@@ -11,7 +11,7 @@ Changes from the starter:
 
 /chat keeps the starter's response shape: response, session_id, tool_calls.
 
-Run from the repo root:  uv run python -m app.main
+Run from the repo root:  uv run app.py
 """
 
 import json
@@ -20,7 +20,6 @@ import uuid
 from pathlib import Path
 
 import litellm
-import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -28,7 +27,7 @@ from pydantic import BaseModel
 from agents.adaptation import tools as adaptation_tools
 from agents.adaptation.schemas import place_from_dict, sidequest_from_dict
 from api.events import router as events_router
-from app.tools import TOOLS, available_tools, clear_session, features, run_tool
+from server.tools import TOOLS, available_tools, clear_session, features, run_tool
 
 # --- Config ---
 
@@ -189,6 +188,12 @@ def index():
     return FileResponse(Path(__file__).parent / "index.html")
 
 
+@app.get("/story")
+def story_page():
+    """Story's standalone /api/events form, kept as a developer page."""
+    return FileResponse(Path(__file__).resolve().parent.parent / "frontend" / "sidequest.html")
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest):
     session_id = get_or_create_session(request.session_id)
@@ -260,7 +265,3 @@ def undo(request: SessionRequest):
             "content": f"(The user undid the last change; the SideQuest is back to version {version}.)",
         }]
     return result
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)

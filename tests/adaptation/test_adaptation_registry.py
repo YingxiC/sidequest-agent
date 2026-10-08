@@ -1,7 +1,7 @@
 import json
 
 from agents.adaptation import tools as adaptation_tools
-from app import tools as registry
+from server import tools as registry
 
 
 def test_tools_are_litellm_format():

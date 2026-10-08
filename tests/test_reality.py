@@ -1,7 +1,7 @@
 import json
 from agents.reality.match_theme import PERSONA_PROFILES, candidate_places, match_theme
 from agents.reality import tools
-from app import tools as registry
+from server import tools as registry
 from integrations.places import PLACES_URL, search_places
 
 

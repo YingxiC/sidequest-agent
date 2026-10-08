@@ -5,7 +5,7 @@ Tools exposed to the model:
     get_weather           (external API) Open-Meteo conditions near a stop
     get_current_sidequest (memory) the active SideQuest for this session
 
-Wiring (see app/tools.py, which merges every pipeline's tools):
+Wiring (see server/tools.py, which merges every pipeline's tools):
 
     from agents.adaptation.tools import TOOLS, TOOL_FUNCTIONS, run_tool, start_session
 

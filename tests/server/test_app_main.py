@@ -10,8 +10,8 @@ pytest.importorskip("litellm")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app import main  # noqa: E402
-from app import tools as registry  # noqa: E402
+from server import main  # noqa: E402
+from server import tools as registry  # noqa: E402
 
 
 class FakeMessage(SimpleNamespace):

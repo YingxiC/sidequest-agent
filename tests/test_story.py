@@ -3,7 +3,7 @@ import json
 from fastapi.testclient import TestClient
 
 from agents.story.build_sidequest import SideQuest, build_sidequest, parse_sidequest, run_tool, search_events
-from app.main import app
+from server.main import app
 
 
 def test_builder_returns_ordered_sidequest_with_time_budget():

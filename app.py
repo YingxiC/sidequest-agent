@@ -1,20 +1,19 @@
-from pathlib import Path
+"""Day as Someone: the one entrypoint.
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+Local:      uv run app.py            then open http://localhost:8000
+Cloud Run:  the same command; Cloud Run sets $PORT and we bind 0.0.0.0.
 
-from api.events import router as events_router
+The server itself lives in server/main.py (`app` is re-exported here, so
+`uvicorn app:app` works too).
+"""
 
-app = FastAPI(title="Day as Someone")
-app.include_router(events_router)
+import os
 
+import uvicorn
 
-@app.get("/")
-def index():
-    return FileResponse(Path(__file__).parent / "frontend" / "sidequest.html")
-
+from server.main import app
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    host = "0.0.0.0" if "PORT" in os.environ else "127.0.0.1"
+    uvicorn.run(app, host=host, port=port)
